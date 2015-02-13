@@ -7,6 +7,7 @@
 #include "WinPingDlg.h"
 
 #include "ProtoInfo.h"
+#include "BitMap.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -216,6 +217,10 @@ UINT CWinPingDlg::PingThreadProc(LPVOID lParam)
 
 	char szDestination[MAX_BUFFER_LEN] = {0};
 	char recvBuf[MAX_BUFFER_LEN] = {0};
+
+	//add to record device ping status.
+	g_stPingStatus = 0;
+	
 	GetDlgItemTextA(hWnd, IDC_COMBO_ADDRESS, szDestination, MAX_BUFFER_LEN);
 
 	dest = CProtoInfo::ResolveAddress(szDestination, "0", AF_INET, 0, 0);
@@ -354,6 +359,9 @@ UINT CWinPingDlg::PingThreadProc(LPVOID lParam)
 			}
 			::SendMessage(hWnd, UM_PINGMSG, (WPARAM)0, (LPARAM)m_strResult.GetBuffer(m_strResult.GetLength()));
 			m_strResult.ReleaseBuffer();
+
+			// add to record ping device status. 2015Äê2ÔÂ12ÈÕ 17:15:52.
+			g_stPingStatus = 1;    // device detect success. 
 
 			if(i < DEFAULT_SEND_COUNT - 1)
 			{

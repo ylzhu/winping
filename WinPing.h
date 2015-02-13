@@ -10,7 +10,7 @@
 
 #include "resource.h"		// main symbols
 
-
+HINSTANCE GetGlobalInstance();
 // CWinPingApp:
 // See WinPing.cpp for the implementation of this class
 //

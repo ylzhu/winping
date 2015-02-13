@@ -16,13 +16,11 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Chinese (P.R.C.) resources
+// 中文(简体，中国) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
-#ifdef _WIN32
 LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
 #pragma code_page(936)
-#endif //_WIN32
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -71,18 +69,24 @@ END
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 IDR_MAINFRAME           ICON                    "res\\WinPing.ico"
-#endif    // Chinese (P.R.C.) resources
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_BITMAP_PASS         BITMAP                  "res\\bitmap_PASS.bmp"
+IDB_BITMAP_NG           BITMAP                  "res\\bitmap_NG.bmp"
+#endif    // 中文(简体，中国) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// English (U.S.) resources
+// 英语(美国) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
-#ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #pragma code_page(1252)
-#endif //_WIN32
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -100,17 +104,26 @@ BEGIN
     DEFPUSHBUTTON   "OK",IDOK,113,41,50,14,WS_GROUP
 END
 
-IDD_WINPING_DIALOG DIALOGEX 0, 0, 265, 148
+IDD_WINPING_DIALOG DIALOGEX 0, 0, 439, 202
 STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_FIXEDSYS | WS_MINIMIZEBOX | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_APPWINDOW
 CAPTION "WinPing"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
-    COMBOBOX        IDC_COMBO_ADDRESS,43,7,215,69,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
-    EDITTEXT        IDC_EDIT_RESULT,7,26,251,96,ES_MULTILINE
-    LTEXT           "Address :",IDC_STATIC,7,8,32,8
-    PUSHBUTTON      "Ping",IDOK,152,127,50,14
-    PUSHBUTTON      "Close",IDCANCEL,208,127,50,14
+    COMBOBOX        IDC_COMBO_ADDRESS,64,27,118,69,CBS_DROPDOWN | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_EDIT_RESULT,202,19,225,163,ES_MULTILINE
+    LTEXT           "Address :",IDC_STATIC,27,28,32,8
+    PUSHBUTTON      "Ping",IDOK,39,172,50,14
+    PUSHBUTTON      "Close",IDCANCEL,112,172,50,14
+    GROUPBOX        "message",IDC_STATIC,195,7,237,181
+    GROUPBOX        "Input",IDC_STATIC,15,16,173,31
+    GROUPBOX        "Device Info",IDC_STATIC,7,7,184,90
+    GROUPBOX        "Get  from device",IDC_STATIC,16,50,171,35
+    LTEXT           "Mac Addr:",IDC_STATIC,23,65,34,8
+    LTEXT           "",IDC_STATIC_MAC_ADDR,63,63,113,13,WS_BORDER,WS_EX_CLIENTEDGE
+    GROUPBOX        "Test status",IDC_STATIC,7,102,182,46
+    LTEXT           "Status:",IDC_STATIC,16,122,24,8
+    CONTROL         "",IDC_STATIC_STATUS_PIC,"Static",SS_BLACKFRAME,49,112,48,30
 END
 
 
@@ -159,7 +172,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO 
+GUIDELINES DESIGNINFO
 BEGIN
     IDD_ABOUTBOX, DIALOG
     BEGIN
@@ -172,9 +185,9 @@ BEGIN
     IDD_WINPING_DIALOG, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 258
+        RIGHTMARGIN, 432
         TOPMARGIN, 7
-        BOTTOMMARGIN, 141
+        BOTTOMMARGIN, 195
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -185,12 +198,12 @@ END
 // String Table
 //
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_ABOUTBOX            "&About WinPing..."
 END
 
-#endif    // English (U.S.) resources
+#endif    // 英语(美国) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

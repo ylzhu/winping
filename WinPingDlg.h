@@ -7,7 +7,7 @@
 
 #include "AutoCompleteComboBox.h"
 
-
+static UINT g_stPingStatus;
 // CWinPingDlg dialog
 class CWinPingDlg : public CDialog
 {
@@ -16,7 +16,7 @@ public:
 	CWinPingDlg(CWnd* pParent = NULL);	// standard constructor
 // Dialog Data
 	enum { IDD = IDD_WINPING_DIALOG };
-
+    
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
 
@@ -24,11 +24,14 @@ private:
 	static UINT __cdecl PingThreadProc(LPVOID lParam);
 	static CString m_strResult;
 	void AddStringToComboBox();
+
+    //CNEWBMP m_TestStatusbmp;
 // Implementation
 protected:
 	HICON m_hIcon;
 	CAutoCompleteComboBox m_combo;
 	CEdit m_edit;
+    
 	// Generated message map functions
 	virtual BOOL OnInitDialog();
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
@@ -39,4 +42,5 @@ protected:
 	afx_msg LRESULT OnPingFin(WPARAM wParam, LPARAM lParam);
 
 	DECLARE_MESSAGE_MAP()
+    
 };

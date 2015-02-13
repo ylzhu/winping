@@ -22,6 +22,16 @@ BEGIN_MESSAGE_MAP(CWinPingApp, CWinAppEx)
 END_MESSAGE_MAP()
 
 
+HINSTANCE g_hInstance;
+HINSTANCE GetGlobalInstance()
+{
+	ASSERT(g_hInstance);
+	return g_hInstance;
+}
+void SetGlobalInstance(HINSTANCE hInst)
+{
+	g_hInstance = hInst;
+}
 // CWinPingApp construction
 
 CWinPingApp::CWinPingApp()
@@ -62,6 +72,9 @@ BOOL CWinPingApp::InitInstance()
 	// TODO: You should modify this string to be something appropriate
 	// such as the name of your company or organization
 	//SetRegistryKey(_T("WinPing"));
+	//HWND hWnd = AfxGetMainWnd()->m_hWnd;
+	SetGlobalInstance(GetModuleHandle(NULL));
+	
 	if(!InitSocket())
 	{
 		AfxMessageBox(_T("Initialize socket DLL failed."));
