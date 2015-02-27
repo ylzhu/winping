@@ -30,6 +30,24 @@ void CNEWBMP::ClearBmp(HWND hMap)
 	FillRect(pDC, &rect, (HBRUSH)COLOR_WINDOW);
 }
 
+/*
+// uBmpResource£ºÍ¼Æ¬ID; uCtrlResource: Picture¿Ø¼þID
+void CNEWBMP::SetBitmap(UINT uBmpResource, UINT uCtrlResource)
+{
+    HBITMAP hBitmap;
+    CStatic *pStatic = (CStatic *)GetDlgItem(uCtrlResource);
+    hBitmap = (HBITMAP)LoadImage(
+        AfxGetInstanceHandle(),
+        MAKEINTRESOURCE(uBmpResource),
+        IMAGE_BITMAP,
+        0,
+        0,
+        LR_LOADMAP3DCOLORS);
+    pStatic->ModifyStyle(0xF, SS_BITMAP);
+    pStatic->SetBitmap(hBitmap);
+}
+*/
+
 void CNEWBMP::DrawBmp(DWORD id)
 {/**/
 	HINSTANCE g_hInstance = GetGlobalInstance();

@@ -12,6 +12,7 @@ public:
 	void SetWindHand(HWND h);
 	HWND GetWindHand();
 
+    //void SetBitmap(UINT uBmpResource, UINT uCtrlResource);
 	void DrawBmp(DWORD id);
 	//void DrawBmp(LPCTSTR szFileName);
 	void DrawBmp2(DWORD id);
@@ -31,6 +32,6 @@ private:
 
 	//	virtual
 };
-extern CNEWBMP g_TestStatusbmp;
+//extern CNEWBMP g_TestStatusbmp;
 
 #endif

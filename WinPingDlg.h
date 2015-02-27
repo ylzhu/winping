@@ -14,6 +14,7 @@ class CWinPingDlg : public CDialog
 // Construction
 public:
 	CWinPingDlg(CWnd* pParent = NULL);	// standard constructor
+	void SetBitmap(UINT uBmpResource, UINT uCtrlResource);
 // Dialog Data
 	enum { IDD = IDD_WINPING_DIALOG };
     
@@ -40,6 +41,8 @@ protected:
 	afx_msg void OnBnClickedOk();
 	afx_msg LRESULT OnPingMsg(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnPingFin(WPARAM wParam, LPARAM lParam);
+
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 
 	DECLARE_MESSAGE_MAP()
     

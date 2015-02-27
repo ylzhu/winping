@@ -7,12 +7,16 @@
 #include "WinPingDlg.h"
 
 #include "ProtoInfo.h"
-#include "BitMap.h"
+//#include "BitMap.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
 
+const UINT IdTestStatusTimer = 501;
+const UINT uTestStatusTimeout = 250;
+
+//CNEWBMP g_status_bmp;
 
 // CAboutDlg dialog used for App About
 
@@ -80,6 +84,7 @@ BEGIN_MESSAGE_MAP(CWinPingDlg, CDialog)
 	ON_BN_CLICKED(IDOK, &CWinPingDlg::OnBnClickedOk)
 	ON_MESSAGE(UM_PINGMSG, &CWinPingDlg::OnPingMsg)
 	ON_MESSAGE(UM_PINGFIN, &CWinPingDlg::OnPingFin)
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 
@@ -88,12 +93,13 @@ END_MESSAGE_MAP()
 BOOL CWinPingDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
-
+	//HWND hWnd = AfxGetMainWnd()->m_hWnd;
 	// Add "About..." menu item to system menu.
 
 	// IDM_ABOUTBOX must be in the system command range.
 	ASSERT((IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX);
 	ASSERT(IDM_ABOUTBOX < 0xF000);
+	//g_status_bmp.SetWindHand((HWND)GetDlgItem(IDC_STATIC_STATUS_PIC));
 
 	CMenu* pSysMenu = GetSystemMenu(FALSE);
 	if (pSysMenu != NULL)
@@ -108,6 +114,8 @@ BOOL CWinPingDlg::OnInitDialog()
 			pSysMenu->AppendMenu(MF_STRING, IDM_ABOUTBOX, strAboutMenu);
 		}
 	}
+	
+	//SetTimer(IdTestStatusTimer, uTestStatusTimeout, NULL);
 
 	// Set the icon for this dialog.  The framework does this automatically
 	//  when the application's main window is not a dialog
@@ -170,15 +178,32 @@ HCURSOR CWinPingDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+void CWinPingDlg::SetBitmap(UINT uBmpResource, UINT uCtrlResource)
+{
+    HBITMAP hBitmap;
+    CStatic *pStatic = (CStatic *)GetDlgItem(uCtrlResource);
+    hBitmap = (HBITMAP)LoadImage(
+        AfxGetInstanceHandle(),
+        MAKEINTRESOURCE(uBmpResource),
+        IMAGE_BITMAP,
+        0,
+        0,
+        LR_LOADMAP3DCOLORS);
+    pStatic->ModifyStyle(0xF, SS_BITMAP);
+    pStatic->SetBitmap(hBitmap);
+}
+
 
 void CWinPingDlg::OnBnClickedOk()
 {
 	// TODO: Add your control notification handler code here
 	//OnOK();
-	m_edit.SetWindowText(_T(""));
+	//m_edit.SetWindowText(_T(""));  // this statement use to clean editbox.
 	GetDlgItem(IDOK)->EnableWindow(FALSE);
 	AddStringToComboBox();
+	SetTimer(IdTestStatusTimer, uTestStatusTimeout, NULL);
 	CWinThread* pThread = AfxBeginThread(PingThreadProc, (LPVOID)GetSafeHwnd());
+	//SetBitmap(IDB_BITMAP_NG, IDC_STATIC_STATUS_PIC);
 	//CloseHandle(pThread->m_hThread);
 }
 
@@ -211,6 +236,9 @@ UINT CWinPingDlg::PingThreadProc(LPVOID lParam)
 	int time = 0;
 	int rc = 0;
 	int status = 0;
+	CString strTmp (_T(""));
+	CString strIpDest(_T(""));
+	
 	ol.hEvent = WSA_INVALID_EVENT;
 
 	int uiError = 0;
@@ -227,23 +255,26 @@ UINT CWinPingDlg::PingThreadProc(LPVOID lParam)
 	if(NULL == dest)
 	{
 		AfxMessageBox(_T("ResolveAddress 1 failed."));
-		return 0;
+		// return 0;
+		goto THREAD_END;
 	}
 	
 	local = CProtoInfo::ResolveAddress(NULL, "0", AF_INET, 0, 0);
 	if(NULL == local)
 	{
 		AfxMessageBox(_T("ResolveAddress 2 failed."));
-		return 0;
+		// return 0;
+		goto THREAD_END;
 	}
 	//WSACleanup();
-	uiError = GetLastError();
+	//uiError = GetLastError();
 	sRaw = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 	if(INVALID_SOCKET == sRaw)
 	{
-		uiError = GetLastError();
+		//uiError = GetLastError();
 		AfxMessageBox(_T("socket failed."));
-		return 0;
+		// return 0;
+		goto THREAD_END;
 	}
 
 	CProtoInfo::SetTTL(sRaw);
@@ -257,7 +288,8 @@ UINT CWinPingDlg::PingThreadProc(LPVOID lParam)
 	{
 		AfxMessageBox(_T("HeapAlloc failed."));
 		closesocket(sRaw);
-		return 0;
+		// return 0;
+		goto THREAD_END;
 	}
 
 	CProtoInfo::InitIcmpHeader(icmpbuf, nDataSize);
@@ -266,7 +298,8 @@ UINT CWinPingDlg::PingThreadProc(LPVOID lParam)
 	{
 		AfxMessageBox(_T("bind failed."));
 		closesocket(sRaw);
-		return 0;
+		// return 0;
+		goto THREAD_END;
 	}
 
 	memset(&ol, 0, sizeof(ol));
@@ -275,7 +308,8 @@ UINT CWinPingDlg::PingThreadProc(LPVOID lParam)
 	{
 		AfxMessageBox(_T("WSACreateEvent failed."));
 		closesocket(sRaw);
-		return 0;
+		// return 0;
+		goto THREAD_END;
 	}
 
 	WSABUF wbuf;
@@ -288,7 +322,8 @@ UINT CWinPingDlg::PingThreadProc(LPVOID lParam)
 		{
 			AfxMessageBox(_T("WSARecvFrom failed."));
 			closesocket(sRaw);
-			return 0;
+			// return 0;
+			goto THREAD_END;
 		}
 	}
 
@@ -298,8 +333,9 @@ UINT CWinPingDlg::PingThreadProc(LPVOID lParam)
 		bAddr = TRUE;
 	}
 
-	CString strTmp (_T(""));
+	
 	strTmp = CProtoInfo::PrintAddress(dest->ai_addr, (int)dest->ai_addrlen);
+	strIpDest = strTmp;
 	if(!bAddr)
 	{
 		m_strResult.Format(_T("Ping %s with %d bytes of data:\r\n"), strTmp, nDataSize);
@@ -349,19 +385,28 @@ UINT CWinPingDlg::PingThreadProc(LPVOID lParam)
 			nMax = max(nMax, time);
 			WSAResetEvent(ol.hEvent);
 			strTmp = CProtoInfo::PrintAddress((SOCKADDR*)&from, fromlen);
-			if(0 == time)
+			if(strIpDest != strTmp)
 			{
-				m_strResult.Format(_T("Reply from %s: bytes=%d time<1ms TTL=%d"), strTmp, nDataSize, DEFAULT_TTL);
+				m_strResult.Format(_T("Reply from %s: destination host unreachable"), strTmp);
 			}
 			else
 			{
-				m_strResult.Format(_T("Reply from %s: bytes=%d time=%dms TTL=%d"), strTmp, nDataSize, time, DEFAULT_TTL);
+				g_stPingStatus = 1;
+				if(0 == time)
+				{
+					m_strResult.Format(_T("Reply from %s: bytes=%d time<1ms TTL=%d"), strTmp, nDataSize, DEFAULT_TTL);
+				}
+				else
+				{
+					m_strResult.Format(_T("Reply from %s: bytes=%d time=%dms TTL=%d"), strTmp, nDataSize, time, DEFAULT_TTL);
+				}
 			}
 			::SendMessage(hWnd, UM_PINGMSG, (WPARAM)0, (LPARAM)m_strResult.GetBuffer(m_strResult.GetLength()));
 			m_strResult.ReleaseBuffer();
 
 			// add to record ping device status. 2015Äê2ÔÂ12ÈÕ 17:15:52.
-			g_stPingStatus = 1;    // device detect success. 
+			// device detect success. 
+			//SetBitmap(IDB_BITMAP_NG, IDC_STATIC_STATUS_PIC);
 
 			if(i < DEFAULT_SEND_COUNT - 1)
 			{
@@ -423,6 +468,7 @@ UINT CWinPingDlg::PingThreadProc(LPVOID lParam)
 		sRaw = INVALID_SOCKET;
 	}
 
+	THREAD_END:
 	::PostMessage(hWnd, UM_PINGFIN, 0, 0);
 	
 	return 0;
@@ -431,16 +477,34 @@ UINT CWinPingDlg::PingThreadProc(LPVOID lParam)
 LRESULT CWinPingDlg::OnPingMsg(WPARAM wParam, LPARAM lParam)
 {
 	LPTSTR lpszText = (LPTSTR)lParam;
+	int iLen = 0;
 
 	if(NULL != lpszText)
 	{
 		CString strText = lpszText;
 		GetDlgItemText(IDC_EDIT_RESULT, strText);
 		strText += m_strResult + _T("\r\n");
-		SetDlgItemText(IDC_EDIT_RESULT, strText);
+		SetDlgItemText(IDC_EDIT_RESULT, _T(""));
+		((CEdit*)GetDlgItem(IDC_EDIT_RESULT))->ReplaceSel(strText);
 	}
 	
 	return 0;
+}
+
+void CWinPingDlg::OnTimer(UINT_PTR nIDEvent)
+{
+	if(nIDEvent == IdTestStatusTimer)
+	{
+		
+		if(g_stPingStatus == 1)
+		{
+			SetBitmap(IDB_BITMAP_PASS, IDC_STATIC_STATUS_PIC);
+		}
+		else if(g_stPingStatus == 0)
+		{
+			SetBitmap(IDB_BITMAP_NG, IDC_STATIC_STATUS_PIC);
+		}
+	}
 }
 
 LRESULT CWinPingDlg::OnPingFin(WPARAM wParam, LPARAM lParam)
