@@ -7,7 +7,8 @@
 #include "WinPingDlg.h"
 
 #include "ProtoInfo.h"
-//#include "BitMap.h"
+#include "NetworkAdapter.h"
+#include "public.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -17,7 +18,7 @@ const UINT IdTestStatusTimer = 501;
 const UINT uTestStatusTimeout = 250;
 
 //CNEWBMP g_status_bmp;
-
+CNetworkAdaper g_networkAdaper;
 // CAboutDlg dialog used for App About
 
 class CAboutDlg : public CDialog
@@ -55,6 +56,7 @@ CString CWinPingDlg::m_strResult = _T("");
 
 #define UM_PINGMSG	WM_USER+10011
 #define UM_PINGFIN  WM_USER+10012
+//#define UM_AUTOTEST  WM_USER+10013
 
 #define DEFAULT_DATA_SIZE      32
 #define DEFAULT_SEND_COUNT     4
@@ -84,6 +86,7 @@ BEGIN_MESSAGE_MAP(CWinPingDlg, CDialog)
 	ON_BN_CLICKED(IDOK, &CWinPingDlg::OnBnClickedOk)
 	ON_MESSAGE(UM_PINGMSG, &CWinPingDlg::OnPingMsg)
 	ON_MESSAGE(UM_PINGFIN, &CWinPingDlg::OnPingFin)
+	//ON_MESSAGE(UM_AUTOTEST, &CWinPingDlg::OnPingFin)
 	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
@@ -123,7 +126,7 @@ BOOL CWinPingDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
 	// TODO: Add extra initialization here
-	m_combo.AddString(_T("127.0.0.1"));
+	m_combo.AddString(_T("192.168.3.8"));
 	m_combo.SetCurSel(0);
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
@@ -199,10 +202,19 @@ void CWinPingDlg::OnBnClickedOk()
 	// TODO: Add your control notification handler code here
 	//OnOK();
 	//m_edit.SetWindowText(_T(""));  // this statement use to clean editbox.
+	char mac[100] = {0};
+	char strIp[40] = {0};
+	TCHAR strMac[100] = {0};
 	GetDlgItem(IDOK)->EnableWindow(FALSE);
 	AddStringToComboBox();
 	SetTimer(IdTestStatusTimer, uTestStatusTimeout, NULL);
 	CWinThread* pThread = AfxBeginThread(PingThreadProc, (LPVOID)GetSafeHwnd());
+	GetDlgItemTextA(GetSafeHwnd(), IDC_COMBO_ADDRESS, strIp, MAX_BUFFER_LEN);
+	if((g_networkAdaper.getLocalMac(strIp, mac))>0)
+	{
+		c2w(strMac, strlen(mac), mac);
+		SetDlgItemText(IDC_STATIC_MAC_ADDR, strMac);
+	}
 	//SetBitmap(IDB_BITMAP_NG, IDC_STATIC_STATUS_PIC);
 	//CloseHandle(pThread->m_hThread);
 }
@@ -254,15 +266,22 @@ UINT CWinPingDlg::PingThreadProc(LPVOID lParam)
 	dest = CProtoInfo::ResolveAddress(szDestination, "0", AF_INET, 0, 0);
 	if(NULL == dest)
 	{
-		AfxMessageBox(_T("ResolveAddress 1 failed."));
+		//AfxMessageBox(_T("ResolveAddress 1 failed."));
 		// return 0;
+		m_strResult.Format(_T("ResolveAddress 1 failed."));
+		::SendMessage(hWnd, UM_PINGMSG, (WPARAM)0, (LPARAM)m_strResult.GetBuffer(m_strResult.GetLength()));
+		m_strResult.ReleaseBuffer();
 		goto THREAD_END;
 	}
+	
 	
 	local = CProtoInfo::ResolveAddress(NULL, "0", AF_INET, 0, 0);
 	if(NULL == local)
 	{
-		AfxMessageBox(_T("ResolveAddress 2 failed."));
+		//AfxMessageBox(_T("ResolveAddress 2 failed."));
+		m_strResult.Format(_T("ResolveAddress 2 failed."));
+		::SendMessage(hWnd, UM_PINGMSG, (WPARAM)0, (LPARAM)m_strResult.GetBuffer(m_strResult.GetLength()));
+		m_strResult.ReleaseBuffer();
 		// return 0;
 		goto THREAD_END;
 	}
@@ -272,7 +291,10 @@ UINT CWinPingDlg::PingThreadProc(LPVOID lParam)
 	if(INVALID_SOCKET == sRaw)
 	{
 		//uiError = GetLastError();
-		AfxMessageBox(_T("socket failed."));
+		//AfxMessageBox(_T("socket failed."));
+		m_strResult.Format(_T("socket failed."));
+		::SendMessage(hWnd, UM_PINGMSG, (WPARAM)0, (LPARAM)m_strResult.GetBuffer(m_strResult.GetLength()));
+		m_strResult.ReleaseBuffer();
 		// return 0;
 		goto THREAD_END;
 	}
@@ -286,7 +308,10 @@ UINT CWinPingDlg::PingThreadProc(LPVOID lParam)
 	icmpbuf = (char*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, packlen);
 	if(NULL == icmpbuf)
 	{
-		AfxMessageBox(_T("HeapAlloc failed."));
+		//AfxMessageBox(_T("HeapAlloc failed."));
+		m_strResult.Format(_T("HeapAlloc failed."));
+		::SendMessage(hWnd, UM_PINGMSG, (WPARAM)0, (LPARAM)m_strResult.GetBuffer(m_strResult.GetLength()));
+		m_strResult.ReleaseBuffer();
 		closesocket(sRaw);
 		// return 0;
 		goto THREAD_END;
@@ -296,7 +321,10 @@ UINT CWinPingDlg::PingThreadProc(LPVOID lParam)
 
 	if(SOCKET_ERROR == bind(sRaw, local->ai_addr, (int)local->ai_addrlen))
 	{
-		AfxMessageBox(_T("bind failed."));
+		//AfxMessageBox(_T("bind failed."));
+		m_strResult.Format(_T("bind failed."));
+		::SendMessage(hWnd, UM_PINGMSG, (WPARAM)0, (LPARAM)m_strResult.GetBuffer(m_strResult.GetLength()));
+		m_strResult.ReleaseBuffer();
 		closesocket(sRaw);
 		// return 0;
 		goto THREAD_END;
@@ -306,7 +334,10 @@ UINT CWinPingDlg::PingThreadProc(LPVOID lParam)
 	ol.hEvent = WSACreateEvent();
 	if(WSA_INVALID_EVENT == ol.hEvent)
 	{
-		AfxMessageBox(_T("WSACreateEvent failed."));
+		//AfxMessageBox(_T("WSACreateEvent failed."));
+		m_strResult.Format(_T("WSACreateEvent failed."));
+		::SendMessage(hWnd, UM_PINGMSG, (WPARAM)0, (LPARAM)m_strResult.GetBuffer(m_strResult.GetLength()));
+		m_strResult.ReleaseBuffer();
 		closesocket(sRaw);
 		// return 0;
 		goto THREAD_END;
@@ -320,7 +351,10 @@ UINT CWinPingDlg::PingThreadProc(LPVOID lParam)
 	{
 		if(WSA_IO_PENDING != WSAGetLastError())
 		{
-			AfxMessageBox(_T("WSARecvFrom failed."));
+			//AfxMessageBox(_T("WSARecvFrom failed."));
+			m_strResult.Format(_T("WSARecvFrom failed."));
+			::SendMessage(hWnd, UM_PINGMSG, (WPARAM)0, (LPARAM)m_strResult.GetBuffer(m_strResult.GetLength()));
+			m_strResult.ReleaseBuffer();
 			closesocket(sRaw);
 			// return 0;
 			goto THREAD_END;
