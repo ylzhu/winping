@@ -53,6 +53,7 @@ END_MESSAGE_MAP()
 // CWinPingDlg dialog
 
 CString CWinPingDlg::m_strResult = _T("");
+bool CWinPingDlg::m_bPingThread_Idle = TRUE;
 
 #define UM_PINGMSG	WM_USER+10011
 #define UM_PINGFIN  WM_USER+10012
@@ -87,6 +88,7 @@ BEGIN_MESSAGE_MAP(CWinPingDlg, CDialog)
 	ON_MESSAGE(UM_PINGMSG, &CWinPingDlg::OnPingMsg)
 	ON_MESSAGE(UM_PINGFIN, &CWinPingDlg::OnPingFin)
 	//ON_MESSAGE(UM_AUTOTEST, &CWinPingDlg::OnPingFin)
+	//ON_WM_DEVICECHANGE()
 	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
@@ -128,6 +130,7 @@ BOOL CWinPingDlg::OnInitDialog()
 	// TODO: Add extra initialization here
 	m_combo.AddString(_T("192.168.3.8"));
 	m_combo.SetCurSel(0);
+	m_bPingThread_Idle = TRUE;
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -194,7 +197,27 @@ void CWinPingDlg::SetBitmap(UINT uBmpResource, UINT uCtrlResource)
         LR_LOADMAP3DCOLORS);
     pStatic->ModifyStyle(0xF, SS_BITMAP);
     pStatic->SetBitmap(hBitmap);
+	// pStatic->ReleaseDC(pStatic->GetDC());
+	//pStatic->GetDC
 }
+
+void CWinPingDlg::ClearBmp(UINT uCtrlResource)
+{
+	HDC   pDC;
+	CDC*   pcDC;
+	RECT rect;
+	HWND hMap;
+	CStatic *pStatic = (CStatic *)GetDlgItem(uCtrlResource);
+	//hMap = GetDlgItem(uCtrlResource);
+	pcDC = pStatic->GetDC();
+	pDC=pcDC->GetSafeHdc();//这个用法不错,学习一下.
+	rect.left =0;               //我一般不会这么用的.
+	rect.top=0;
+	rect.right=90;
+	rect.bottom=60;
+	FillRect(pDC,&rect,(HBRUSH)COLOR_BTNSHADOW);
+}
+
 
 
 void CWinPingDlg::OnBnClickedOk()
@@ -207,14 +230,20 @@ void CWinPingDlg::OnBnClickedOk()
 	TCHAR strMac[100] = {0};
 	GetDlgItem(IDOK)->EnableWindow(FALSE);
 	AddStringToComboBox();
+	ClearBmp(IDC_STATIC_STATUS_PIC);
+	SetDlgItemText(IDC_STATIC_MAC_ADDR, _T(""));
 	SetTimer(IdTestStatusTimer, uTestStatusTimeout, NULL);
+	
+	
 	CWinThread* pThread = AfxBeginThread(PingThreadProc, (LPVOID)GetSafeHwnd());
 	GetDlgItemTextA(GetSafeHwnd(), IDC_COMBO_ADDRESS, strIp, MAX_BUFFER_LEN);
 	if((g_networkAdaper.getLocalMac(strIp, mac))>0)
 	{
 		c2w(strMac, strlen(mac), mac);
 		SetDlgItemText(IDC_STATIC_MAC_ADDR, strMac);
+		
 	}
+
 	//SetBitmap(IDB_BITMAP_NG, IDC_STATIC_STATUS_PIC);
 	//CloseHandle(pThread->m_hThread);
 }
@@ -248,6 +277,8 @@ UINT CWinPingDlg::PingThreadProc(LPVOID lParam)
 	int time = 0;
 	int rc = 0;
 	int status = 0;
+	m_bPingThread_Idle = FALSE;
+	
 	CString strTmp (_T(""));
 	CString strIpDest(_T(""));
 	
@@ -455,7 +486,7 @@ UINT CWinPingDlg::PingThreadProc(LPVOID lParam)
 				}
 			}
 		}
-		Sleep(1000);
+		Sleep(500);
 	}
 
 	strTmp = CProtoInfo::PrintAddress((SOCKADDR*)dest->ai_addr, (int)dest->ai_addrlen);
@@ -503,6 +534,7 @@ UINT CWinPingDlg::PingThreadProc(LPVOID lParam)
 	}
 
 	THREAD_END:
+	m_bPingThread_Idle = TRUE;
 	::PostMessage(hWnd, UM_PINGFIN, 0, 0);
 	
 	return 0;
@@ -529,14 +561,18 @@ void CWinPingDlg::OnTimer(UINT_PTR nIDEvent)
 {
 	if(nIDEvent == IdTestStatusTimer)
 	{
-		
-		if(g_stPingStatus == 1)
+		if((g_networkAdaper.m_bGetMacStatus_Idle == TRUE) && (m_bPingThread_Idle == TRUE))
 		{
-			SetBitmap(IDB_BITMAP_PASS, IDC_STATIC_STATUS_PIC);
-		}
-		else if(g_stPingStatus == 0)
-		{
-			SetBitmap(IDB_BITMAP_NG, IDC_STATIC_STATUS_PIC);
+			if(g_stPingStatus == 1)
+			{
+				SetBitmap(IDB_BITMAP_PASS, IDC_STATIC_STATUS_PIC);
+				WinExec("cmd.exe /c \"devcon disable *PID_0179*\"",SW_SHOW);
+			}
+			else if(g_stPingStatus == 0)
+			{
+				SetBitmap(IDB_BITMAP_NG, IDC_STATIC_STATUS_PIC);
+			}
+			KillTimer(IdTestStatusTimer);
 		}
 	}
 }

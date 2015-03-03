@@ -133,7 +133,9 @@
     <ClInclude Include="WinPingDlg.h" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="res\bitmap1.bmp" />
     <Image Include="res\bitmap_NG.bmp" />
+    <Image Include="res\bitmap_NULL.bmp" />
     <Image Include="res\bitmap_PASS.bmp" />
     <Image Include="res\WinPing.ico" />
   </ItemGroup>
