@@ -6,7 +6,8 @@ class CNetworkAdaper
 public:
 	CNetworkAdaper(){ m_bGetMacStatus_Idle = TRUE; m_bGetMacSuccess = FALSE;};
     ~CNetworkAdaper(){};
-	int getLocalMac(char *ip, char *mac);
+	int getLocalMac(char *description, char *mac);
+    int getDevice(char *description);
     //int GetMac(char * mac);
 public:
     bool m_bGetMacStatus_Idle;

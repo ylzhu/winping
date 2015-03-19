@@ -30,6 +30,9 @@ private:
 
     //CNEWBMP m_TestStatusbmp;
 // Implementation
+public:
+	int m_device_exist;
+    bool m_btn_ok_status;
 protected:
 	HICON m_hIcon;
 	CAutoCompleteComboBox m_combo;
@@ -45,10 +48,11 @@ protected:
 	afx_msg void OnBnClickedOk();
 	afx_msg LRESULT OnPingMsg(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnPingFin(WPARAM wParam, LPARAM lParam);
-	//afx_msg BOOL OnDeviceChange(UINT nEventType, DWORD dwData);
+    afx_msg LRESULT OnCheckDevice(WPARAM wParam, LPARAM lParam);
+        
+	afx_msg LRESULT OnMyDeviceChange(WPARAM wParam, LPARAM lParam);
 
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 
-	DECLARE_MESSAGE_MAP()
-    
+	DECLARE_MESSAGE_MAP() 
 };

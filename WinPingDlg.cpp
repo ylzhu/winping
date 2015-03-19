@@ -9,13 +9,16 @@
 #include "ProtoInfo.h"
 #include "NetworkAdapter.h"
 #include "public.h"
-
+#include "Dbt.h"
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
 
 const UINT IdTestStatusTimer = 501;
 const UINT uTestStatusTimeout = 250;
+
+const UINT IdCheckDevExist = 502;
+const UINT uCheckDevExistTimeout = 200;
 
 //CNEWBMP g_status_bmp;
 CNetworkAdaper g_networkAdaper;
@@ -57,7 +60,7 @@ bool CWinPingDlg::m_bPingThread_Idle = TRUE;
 
 #define UM_PINGMSG	WM_USER+10011
 #define UM_PINGFIN  WM_USER+10012
-//#define UM_AUTOTEST  WM_USER+10013
+#define UM_CHECKDEVICE  WM_USER+10013
 
 #define DEFAULT_DATA_SIZE      32
 #define DEFAULT_SEND_COUNT     4
@@ -87,8 +90,9 @@ BEGIN_MESSAGE_MAP(CWinPingDlg, CDialog)
 	ON_BN_CLICKED(IDOK, &CWinPingDlg::OnBnClickedOk)
 	ON_MESSAGE(UM_PINGMSG, &CWinPingDlg::OnPingMsg)
 	ON_MESSAGE(UM_PINGFIN, &CWinPingDlg::OnPingFin)
+	ON_MESSAGE(UM_CHECKDEVICE, &CWinPingDlg::OnCheckDevice)
 	//ON_MESSAGE(UM_AUTOTEST, &CWinPingDlg::OnPingFin)
-	//ON_WM_DEVICECHANGE()
+	ON_MESSAGE(WM_DEVICECHANGE, &CWinPingDlg::OnMyDeviceChange)
 	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
@@ -128,12 +132,101 @@ BOOL CWinPingDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
 	// TODO: Add extra initialization here
+#if 1
+	//  登记设置的GUID, 在 WM_DEVICECHANGE 事件中取得该设置信息.
+	DEV_BROADCAST_DEVICEINTERFACE NotificationFilter;
+	HDEVNOTIFY hDeviceNotify;
+	// This GUID is for all USB serial host PnP drivers, but you can replace it 
+	// with any valid device class guid.
+	GUID WceusbshGUID = { 0x4d36e972, 0xe325, 0x11ce,
+		0xbf, 0xc1, 0x08, 0x00, 0x2b, 0xe1, 0x03, 0x18 };  //{4d36e972-e325-11ce-bfc1-08002be10318}
+    ZeroMemory( &NotificationFilter, sizeof(NotificationFilter) );
+    NotificationFilter.dbcc_size = sizeof(DEV_BROADCAST_DEVICEINTERFACE);
+    NotificationFilter.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
+	NotificationFilter.dbcc_classguid = WceusbshGUID;
+
+    hDeviceNotify = RegisterDeviceNotification( 
+		this->m_hWnd,                       // events recipient
+        &NotificationFilter,        // type of device
+		DEVICE_NOTIFY_ALL_INTERFACE_CLASSES // type of recipient handle
+        );
+
+    if ( NULL == hDeviceNotify ) 
+    {
+        //ErrorHandler(TEXT("RegisterDeviceNotification"));
+        return FALSE;
+    }
+
+	m_device_exist = 0;
+	m_btn_ok_status = TRUE;
+#endif
+	
 	m_combo.AddString(_T("192.168.3.8"));
 	m_combo.SetCurSel(0);
 	m_bPingThread_Idle = TRUE;
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
+
+LRESULT CWinPingDlg::OnMyDeviceChange(WPARAM wParam, LPARAM lParam)
+{    
+	
+	int temp = 0;
+    // PDEV_BROADCAST_HDR devHdr;  
+	PDEV_BROADCAST_DEVICEINTERFACE devInterface = (PDEV_BROADCAST_DEVICEINTERFACE)lParam;;
+
+	switch (wParam)
+	{
+		case DBT_DEVICEREMOVECOMPLETE://移除设备  
+		{
+			#if 0
+			if (devInterface)
+			{
+			  if (wcsstr(devInterface->dbcc_name, _T("PID_0179")) != NULL)
+			  {
+				  m_device_exist = 0;
+			  }
+			}
+			#endif
+			break;
+		}
+		case DBT_DEVICEARRIVAL://添加设备    
+		{
+			#if 0
+			if (devInterface)
+			{
+			   if (wcsstr(devInterface->dbcc_name, _T("PID_0179")) != NULL)
+			   {
+				   m_device_exist = 1;
+			   }
+			}
+			#endif
+			break;
+		}
+		case DBT_DEVNODES_CHANGED:
+		{
+#if 0
+			if(m_device_exist == 0)
+			{
+				if((temp = WinExec("cmd.exe /c \"devcon enable *PID_0179*\"",SW_HIDE))>=31)
+				{
+					Sleep(500);
+					::PostMessage(this->m_hWnd, UM_CHECKDEVICE, 0, 0);
+				}
+			}
+#endif
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	}
+	//}
+  
+    return TRUE;    
+}  
+
 
 void CWinPingDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
@@ -206,15 +299,15 @@ void CWinPingDlg::ClearBmp(UINT uCtrlResource)
 	HDC   pDC;
 	CDC*   pcDC;
 	RECT rect;
-	HWND hMap;
+	//HWND hMap;
 	CStatic *pStatic = (CStatic *)GetDlgItem(uCtrlResource);
 	//hMap = GetDlgItem(uCtrlResource);
 	pcDC = pStatic->GetDC();
 	pDC=pcDC->GetSafeHdc();//这个用法不错,学习一下.
 	rect.left =0;               //我一般不会这么用的.
 	rect.top=0;
-	rect.right=90;
-	rect.bottom=60;
+	rect.right=137;
+	rect.bottom=62;
 	FillRect(pDC,&rect,(HBRUSH)COLOR_BTNSHADOW);
 }
 
@@ -225,24 +318,16 @@ void CWinPingDlg::OnBnClickedOk()
 	// TODO: Add your control notification handler code here
 	//OnOK();
 	//m_edit.SetWindowText(_T(""));  // this statement use to clean editbox.
-	char mac[100] = {0};
-	char strIp[40] = {0};
-	TCHAR strMac[100] = {0};
-	GetDlgItem(IDOK)->EnableWindow(FALSE);
-	AddStringToComboBox();
-	ClearBmp(IDC_STATIC_STATUS_PIC);
-	SetDlgItemText(IDC_STATIC_MAC_ADDR, _T(""));
-	SetTimer(IdTestStatusTimer, uTestStatusTimeout, NULL);
-	
-	
-	CWinThread* pThread = AfxBeginThread(PingThreadProc, (LPVOID)GetSafeHwnd());
-	GetDlgItemTextA(GetSafeHwnd(), IDC_COMBO_ADDRESS, strIp, MAX_BUFFER_LEN);
-	if((g_networkAdaper.getLocalMac(strIp, mac))>0)
+	if(m_btn_ok_status)
 	{
-		c2w(strMac, strlen(mac), mac);
-		SetDlgItemText(IDC_STATIC_MAC_ADDR, strMac);
-		
+		WinExec("cmd.exe /c \"devcon enable *PID_0179*\"",SW_HIDE);
+		m_btn_ok_status = FALSE;
+		GetDlgItem(IDOK)->EnableWindow(FALSE);
+		ClearBmp(IDC_STATIC_STATUS_PIC);
+		SetDlgItemText(IDC_STATIC_MAC_ADDR, _T(""));
+		SetTimer(IdCheckDevExist, uCheckDevExistTimeout, NULL);
 	}
+	
 
 	//SetBitmap(IDB_BITMAP_NG, IDC_STATIC_STATUS_PIC);
 	//CloseHandle(pThread->m_hThread);
@@ -566,7 +651,7 @@ void CWinPingDlg::OnTimer(UINT_PTR nIDEvent)
 			if(g_stPingStatus == 1)
 			{
 				SetBitmap(IDB_BITMAP_PASS, IDC_STATIC_STATUS_PIC);
-				WinExec("cmd.exe /c \"devcon disable *PID_0179*\"",SW_SHOW);
+				WinExec("cmd.exe /c \"devcon disable *PID_0179*\"",SW_HIDE);
 			}
 			else if(g_stPingStatus == 0)
 			{
@@ -575,10 +660,58 @@ void CWinPingDlg::OnTimer(UINT_PTR nIDEvent)
 			KillTimer(IdTestStatusTimer);
 		}
 	}
+
+	if(nIDEvent == IdCheckDevExist)
+	{
+		char description[] = {"Realtek RTL8188ETV Wireless LAN"};
+		if (g_networkAdaper.getDevice(description))
+		{
+			KillTimer(IdCheckDevExist);
+			::PostMessage(this->m_hWnd, UM_CHECKDEVICE, 0, 0);
+		}
+		
+	}
+	
 }
 
 LRESULT CWinPingDlg::OnPingFin(WPARAM wParam, LPARAM lParam)
 {
+	m_btn_ok_status = TRUE;
 	GetDlgItem(IDOK)->EnableWindow(TRUE);
 	return 0;
 }
+
+#if 1
+LRESULT CWinPingDlg::OnCheckDevice(WPARAM wParam, LPARAM lParam)
+{
+	char mac[100] = {0};
+	//char strIp[40] = {0};
+	char description[] = {"Realtek RTL8188ETV Wireless LAN"};
+	TCHAR strMac[100] = {0};
+	if(m_bPingThread_Idle && g_networkAdaper.m_bGetMacStatus_Idle)
+	{
+		GetDlgItem(IDOK)->EnableWindow(FALSE);
+		AddStringToComboBox();
+		ClearBmp(IDC_STATIC_STATUS_PIC);
+		SetDlgItemText(IDC_STATIC_MAC_ADDR, _T(""));
+		
+		
+		
+		CWinThread* pThread = AfxBeginThread(PingThreadProc, (LPVOID)GetSafeHwnd());
+		
+		SetTimer(IdTestStatusTimer, uTestStatusTimeout, NULL);
+		
+		//GetDlgItemTextA(GetSafeHwnd(), IDC_COMBO_ADDRESS, strIp, MAX_BUFFER_LEN);
+		if((g_networkAdaper.getLocalMac(description, mac))>0)
+		{
+			c2w(strMac, strlen(mac), mac);
+			SetDlgItemText(IDC_STATIC_MAC_ADDR, strMac);
+			
+		}
+		return 1;
+	}
+	return 0;
+}
+#endif
+
+
